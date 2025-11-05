@@ -1,113 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MatchMate</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flappy Dino</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-    h1, h2 {
-      color: #2563eb;
-    }
-    h1 {
-      text-align: center;
-    }
-    section {
-      background: #ffffff;
-      padding: 15px 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    ul {
+    * {
       margin: 0;
-      padding-left: 20px;
+      padding: 0;
+      box-sizing: border-box;
     }
-    footer {
-      text-align: center;
-      margin-top: 30px;
-      color: #64748b;
-      font-size: 0.9em;
+    body {
+      background: linear-gradient(to bottom, #87ceeb, #e0f7fa);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    canvas {
+      background: #f1f1f1;
+      border: 3px solid #444;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body>
+  <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-  <h1>MatchMate</h1>
-  <p style="text-align:center;">A smarter way to connect people with shared interests</p>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-  <section>
-    <h2>Team Members</h2>
-    <ul>
-      <li>Wyatt Hoetker</li>
-    </ul>
-  </section>
+    // Game variables
+    let dinoX = 80;
+    let dinoY = canvas.height / 2;
+    let dinoSize = 40;
+    let gravity = 0.5;
+    let jump = -9;
+    let velocity = 0;
+    let score = 0;
+    let gameOver = false;
 
-  <section>
-    <h2>Application Overview</h2>
-    <p>
-      MatchMate is a simple web application that connects people with similar interests. 
-      Users can create a profile, list their hobbies, and find others with matching preferences. 
-      The platform provides an easy, fun, and safe way to make new connections.
-    </p>
-  </section>
+    let pipes = [];
+    const pipeWidth = 70;
+    const gap = 150;
+    let frame = 0;
 
-  <section>
-    <h2>Technology Overview</h2>
-    <ul>
-      <li>Frontend: HTML, CSS, JavaScript</li>
-      <li>Backend: Node.js and Express</li>
-      <li>Database: MongoDB</li>
-      <li>Hosting: GitHub Pages / Render</li>
-    </ul>
-  </section>
+    document.addEventListener("keydown", () => {
+      if (!gameOver) {
+        velocity = jump;
+      } else {
+        restartGame();
+      }
+    });
+    document.addEventListener("click", () => {
+      if (!gameOver) {
+        velocity = jump;
+      } else {
+        restartGame();
+      }
+    });
 
-  <section>
-    <h2>Proposal Last Updated</h2>
-    <p>October 22, 2025</p>
-  </section>
+    function drawDino() {
+      ctx.fillStyle = "#3a3a3a";
+      ctx.fillRect(dinoX, dinoY, dinoSize, dinoSize);
+      ctx.fillStyle = "#00ff88";
+      ctx.fillRect(dinoX + 10, dinoY + 10, 5, 5); // little eye
+    }
 
-  <section>
-    <h2>Feature List (Prioritized)</h2>
-    <ul>
-      <li>User registration and login</li>
-      <li>Profile creation</li>
-      <li>Interest-based matching</li>
-      <li>Chat and messaging</li>
-    </ul>
-  </section>
+    function drawPipes() {
+      ctx.fillStyle = "#4caf50";
+      pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
+      });
+    }
 
-  <section>
-    <h2>Future Feature List</h2>
-    <ul>
-      <li>AI-powered matching</li>
-      <li>Video chat integration</li>
-      <li>Mobile app version</li>
-    </ul>
-  </section>
+    function updatePipes() {
+      if (frame % 90 === 0) {
+        const topHeight = Math.random() * (canvas.height - gap - 100) + 50;
+        pipes.push({
+          x: canvas.width,
+          top: topHeight,
+          bottom: topHeight + gap
+        });
+      }
 
-  <section>
-    <h2>Basic Technical Features</h2>
-    <ul>
-      <li>Responsive layout using CSS</li>
-      <li>Form validation with JavaScript</li>
-      <li>API connection to backend</li>
-    </ul>
-  </section>
+      pipes.forEach(pipe => {
+        pipe.x -= 3;
 
-  <section>
-    <h2>Advanced Technical Features</h2>
-    <ul>
-      <li>Real-time chat with WebSockets</li>
-      <li>JWT-based authentication</li>
-      <li>Machine learning recommendations</li>
-    </ul>
-  </section>
+        // Collision detection
+        if (
+          dinoX + dinoSize > pipe.x &&
+          dinoX < pipe.x + pipeWidth &&
+          (dinoY < pipe.top || dinoY + dinoSize > pipe.bottom)
+        ) {
+          gameOver = true;
+        }
 
+        if (pipe.x + pipeWidth === dinoX) score++;
+      });
+
+      pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
+    }
+
+    function updateDino() {
+      velocity += gravity;
+      dinoY += velocity;
+      if (dinoY + dinoSize > canvas.height) {
+        dinoY = canvas.height - dinoSize;
+        gameOver = true;
+      }
+      if (dinoY < 0) {
+        dinoY = 0;
+        velocity = 0;
+      }
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "#000";
+      ctx.font = "24px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+    }
+
+    function showGameOver() {
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.font = "36px Arial";
+      ctx.fillText("Game Over", canvas.width / 2 - 90, canvas.height / 2 - 20);
+      ctx.font = "24px Arial";
+      ctx.fillText("Press any key or click to restart", canvas.width / 2 - 170, canvas.height / 2 + 30);
+      ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 70, canvas.height / 2 + 70);
+    }
+
+    function restartGame() {
+      dinoY = canvas.height / 2;
+      velocity = 0;
+      pipes = [];
+      score = 0;
+      gameOver = false;
+      frame = 0;
+      animate();
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!gameOver) {
+        frame++;
+        updateDino();
+        updatePipes();
+        drawPipes();
+        drawDino();
+        drawScore();
+        requestAnimationFrame(animate);
+      } else {
+        showGameOver();
+      }
+    }
+
+    animate();
+  </script>
 </body>
 </html>
